@@ -1,0 +1,32 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>br.com.danielschiavo</groupId>
+        <artifactId>Aposta</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <groupId>com.apostassa</groupId>
+    <artifactId>apostas-sa-admin</artifactId>
+    <packaging>war</packaging>
+    <name>apostas-sa-admin Maven Webapp</name>
+    <url>http://maven.apache.org</url>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.apostassa</groupId>
+            <artifactId>apostas-sa-dominio</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.apostassa</groupId>
+            <artifactId>apostas-sa-config-comuns</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>apostas-sa-admin</finalName>
+    </build>
+</project>

@@ -1,0 +1,29 @@
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         version="2.5"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+
+  <display-name>Archetype Created Web Application</display-name>
+
+  <!-- CATEGORIA -->
+
+  <servlet>
+    <servlet-name>CategoriaAdminServlet</servlet-name>
+    <servlet-class>com.apostassa.infra.categoria.CategoriaAdminServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>CategoriaAdminServlet</servlet-name>
+    <url-pattern>/categoria/*</url-pattern>
+  </servlet-mapping>
+
+  <!-- SUB - CATEGORIA -->
+
+  <servlet>
+    <servlet-name>SubCategoriaAdminServlet</servlet-name>
+    <servlet-class>com.apostassa.infra.categoria.subcategoria.SubCategoriaAdminServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>SubCategoriaAdminServlet</servlet-name>
+    <url-pattern>/sub-categoria/*</url-pattern>
+  </servlet-mapping>
+</web-app>
