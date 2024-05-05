@@ -1,32 +1,43 @@
 package com.apostassa.aplicacao.categoria.subcategoria;
 
 
+import com.apostassa.aplicacao.ProvedorConexao;
 import com.apostassa.dominio.ValidacaoException;
 import com.apostassa.dominio.categoria.subcategoria.DeletarSubCategoriaException;
 import com.apostassa.dominio.categoria.subcategoria.RepositorioDeSubCategoriaAdmin;
 import com.apostassa.dominio.usuario.exceptions.AutenticacaoException;
 
 public class DeletarSubCategoria {
+
+	private final ProvedorConexao provedorConexao;
+
+	private final RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria;
+
+	private final SubCategoriaAdminPresenter presenter;
 	
-	private RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria;
-	
-	public DeletarSubCategoria(RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria) {
+	public DeletarSubCategoria(ProvedorConexao provedorConexao, RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria, SubCategoriaAdminPresenter presenter) {
+		this.provedorConexao = provedorConexao;
 		this.repositorioDeSubCategoria = repositorioDeSubCategoria;
+		this.presenter = presenter;
 	}
 
-	public void executa(String categoriaId) throws AutenticacaoException, DeletarSubCategoriaException, ValidacaoException {
+	public String executa(String categoriaId) throws AutenticacaoException, DeletarSubCategoriaException, ValidacaoException {
 		try {
 			repositorioDeSubCategoria.deletarSubCategoria(categoriaId);
 			
-			repositorioDeSubCategoria.commitarTransacao();
+			provedorConexao.commitarTransacao();
+
+			return presenter.respostaDeletarSubCategoria();
 		} catch (DeletarSubCategoriaException e) {
 			e.printStackTrace();
-			repositorioDeSubCategoria.rollbackTransacao();
+			provedorConexao.rollbackTransacao();
 			throw new DeletarSubCategoriaException(e.getMessage());
 		} catch (ValidacaoException e) {
 			e.printStackTrace();
-			repositorioDeSubCategoria.rollbackTransacao();
+			provedorConexao.rollbackTransacao();
 			throw new ValidacaoException(e.getMessage());
+		} finally {
+			provedorConexao.fecharConexao();
 		}
 	}
 	

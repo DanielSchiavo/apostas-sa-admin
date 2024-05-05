@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@Getter
 public class RepositorioDeCategoriaAdminComJdbcPostgres implements RepositorioDeCategoriaAdmin {
 
     private final Connection connection;
@@ -28,13 +27,13 @@ public class RepositorioDeCategoriaAdminComJdbcPostgres implements RepositorioDe
     public void cadastrarCategoria(Categoria categoria) throws ValidacaoException {
         String sql = """
                 INSERT INTO categorias
-                (id, nome, icone, data_criacao, criado_por_usuario_id, ativo)
+                (id, nome, icone, data_e_hora_criacao, criado_por_usuario_id, ativo)
                 VALUES (?, ?, ?, ?, ?, ?)""";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, categoria.getId().toString());
             ps.setString(2, categoria.getNome());
             ps.setString(3, categoria.getIcone());
-            ps.setTimestamp(4, Timestamp.valueOf(categoria.getDataCriacao()));
+            ps.setTimestamp(4, Timestamp.valueOf(categoria.getDataEHoraCriacao()));
             ps.setString(5, categoria.getCriadoPor().toString());
             ps.setBoolean(6, categoria.getAtivo());
             ps.execute();
@@ -61,8 +60,8 @@ public class RepositorioDeCategoriaAdminComJdbcPostgres implements RepositorioDe
                 ps.setBoolean(index, categoria.getAtivo());
                 index++;
             }
-            if (categoria.getDataUltimaAlteracao() != null) {
-                ps.setTimestamp(index, Timestamp.valueOf(categoria.getDataUltimaAlteracao()));
+            if (categoria.getDataEHoraUltimaAlteracao() != null) {
+                ps.setTimestamp(index, Timestamp.valueOf(categoria.getDataEHoraUltimaAlteracao()));
                 index++;
             }
             if (categoria.getAlteradorPor() != null) {
@@ -118,9 +117,9 @@ public class RepositorioDeCategoriaAdminComJdbcPostgres implements RepositorioDe
                     String id = rs.getString("id");
                     String nome = rs.getString("nome");
                     String icone = rs.getString("icone");
-                    LocalDateTime dataCriacao = rs.getTimestamp("data_criacao").toLocalDateTime();
+                    LocalDateTime dataCriacao = rs.getTimestamp("data_e_hora_criacao").toLocalDateTime();
                     String criadoPor = rs.getString("criado_por_usuario_id");
-                    Timestamp dataUltimaAlteracaoTimestamp = rs.getTimestamp("data_ultima_alteracao");
+                    Timestamp dataUltimaAlteracaoTimestamp = rs.getTimestamp("data_e_hora_ultima_alteracao");
                     String alteradoPor = rs.getString("alterado_por_usuario_id");
                     Long numeroApostas = rs.getLong("numero_apostas");
                     Long numeroEventos = rs.getLong("numero_eventos");
@@ -134,14 +133,14 @@ public class RepositorioDeCategoriaAdminComJdbcPostgres implements RepositorioDe
                     Categoria.CategoriaBuilder categoriaBuilder = Categoria.builder().id(UUID.fromString(id))
                             .nome(nome)
                             .icone(icone)
-                            .dataCriacao(dataCriacao)
+                            .dataEHoraCriacao(dataCriacao)
                             .criadoPor(UUID.fromString(criadoPor))
                             .numeroApostas(numeroApostas)
                             .numeroEventos(numeroEventos)
                             .ativo(ativo);
 
                     if (dataUltimaAlteracaoTimestamp != null) {
-                        categoriaBuilder.dataUltimaAlteracao(dataUltimaAlteracaoTimestamp.toLocalDateTime());
+                        categoriaBuilder.dataEHoraUltimaAlteracao(dataUltimaAlteracaoTimestamp.toLocalDateTime());
                     }
                     if (alteradoPor != null) {
                         categoriaBuilder.alteradorPor(UUID.fromString(alteradoPor));
@@ -180,9 +179,9 @@ public class RepositorioDeCategoriaAdminComJdbcPostgres implements RepositorioDe
                     String id = rs.getString("id");
                     String nome = rs.getString("nome");
                     String icone = rs.getString("icone");
-                    LocalDateTime dataCriacao = rs.getTimestamp("data_criacao").toLocalDateTime();
+                    LocalDateTime dataCriacao = rs.getTimestamp("data_e_hora_criacao").toLocalDateTime();
                     String criadoPor = rs.getString("criado_por_usuario_id");
-                    Timestamp dataUltimaAlteracaoTimestamp = rs.getTimestamp("data_ultima_alteracao");
+                    Timestamp dataUltimaAlteracaoTimestamp = rs.getTimestamp("data_e_hora_ultima_alteracao");
                     String alteradoPor = rs.getString("alterado_por_usuario_id");
                     Long numeroApostas = rs.getLong("numero_apostas");
                     Long numeroEventos = rs.getLong("numero_eventos");
@@ -198,14 +197,14 @@ public class RepositorioDeCategoriaAdminComJdbcPostgres implements RepositorioDe
                                     .id(UUID.fromString(id))
                                     .nome(nome)
                                     .icone(icone)
-                                    .dataCriacao(dataCriacao)
+                                    .dataEHoraCriacao(dataCriacao)
                                     .criadoPor(UUID.fromString(criadoPor))
                                     .numeroApostas(numeroApostas)
                                     .numeroEventos(numeroEventos)
                                     .ativo(ativo);
 
                     if (dataUltimaAlteracaoTimestamp != null) {
-                        categoriaBuilder.dataUltimaAlteracao(dataUltimaAlteracaoTimestamp.toLocalDateTime());
+                        categoriaBuilder.dataEHoraUltimaAlteracao(dataUltimaAlteracaoTimestamp.toLocalDateTime());
                     }
                     if (alteradoPor != null) {
                         categoriaBuilder.alteradorPor(UUID.fromString(alteradoPor));
@@ -258,29 +257,9 @@ public class RepositorioDeCategoriaAdminComJdbcPostgres implements RepositorioDe
         if (first) {
             throw new ValidacaoException("Para alterar uma categoria você deve enviar alguma alteração seja em nome, icone ou ativo");
         }
-        sql.append(", data_ultima_alteracao = ?, alterado_por_usuario_id = ? WHERE id = ?");
+        sql.append(", data_e_hora_ultima_alteracao = ?, alterado_por_usuario_id = ? WHERE id = ?");
 
         return sql.toString();
-    }
-
-    @Override
-    public void commitarTransacao() {
-        try {
-            getConnection().commit();
-            getConnection().close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void rollbackTransacao() {
-        try {
-            getConnection().rollback();
-            getConnection().close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
     }
 
 }

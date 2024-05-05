@@ -1,27 +1,29 @@
 package com.apostassa.aplicacao.categoria;
 
+import com.apostassa.aplicacao.ProvedorConexao;
 import com.apostassa.dominio.ValidacaoException;
 import com.apostassa.dominio.categoria.Categoria;
 import com.apostassa.dominio.categoria.RepositorioDeCategoriaAdmin;
 import com.apostassa.dominio.categoria.subcategoria.RepositorioDeSubCategoriaAdmin;
 import com.apostassa.dominio.categoria.subcategoria.SubCategoria;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class PegarCategoriaPorId {
 
+    private final ProvedorConexao provedorConexao;
+
     private final RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria;
+
+    private final CategoriaAdminPresenter presenter;
 
     private final RepositorioDeCategoriaAdmin repositorioDeCategoria;
 
-    public PegarCategoriaPorId(RepositorioDeCategoriaAdmin repositorioDeCategoria, RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria) {
+    public PegarCategoriaPorId(ProvedorConexao provedorConexao, RepositorioDeCategoriaAdmin repositorioDeCategoria, CategoriaAdminPresenter presenter, RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria) {
+        this.provedorConexao = provedorConexao;
         this.repositorioDeCategoria = repositorioDeCategoria;
+        this.presenter = presenter;
         this.repositorioDeSubCategoria = repositorioDeSubCategoria;
     }
 
@@ -33,17 +35,14 @@ public class PegarCategoriaPorId {
 
             subCategorias.forEach(categoria::adicionarSubCategoria);
 
-            repositorioDeCategoria.commitarTransacao();
+            provedorConexao.commitarTransacao();
 
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-            objectMapper.registerModule(new JavaTimeModule());
-            objectMapper.configOverride(LocalDateTime.class).setFormat(JsonFormat.Value.forPattern("dd/MM/yyyy hh:MM:ss"));
-
-            return objectMapper.writeValueAsString(categoria);
+            return presenter.respostaPegarCategoriaPorId(categoria);
         } catch (ValidacaoException e) {
-            repositorioDeCategoria.rollbackTransacao();
+            provedorConexao.rollbackTransacao();
             throw new ValidacaoException(e.getMessage());
+        } finally {
+            provedorConexao.fecharConexao();
         }
     }
 }

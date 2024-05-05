@@ -1,6 +1,7 @@
 package com.apostassa.aplicacao.categoria;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,6 +18,6 @@ public class CadastrarCategoriaDTO {
 	
 	private String icone;
 	
-	@NotBlank(message = "Você deve informar se essa categoria deve estar ativa ou não")
+	@NotNull(message = "Você deve informar se essa categoria deve estar ativa ou não")
 	private Boolean ativo;
 }

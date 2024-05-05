@@ -1,5 +1,6 @@
 package com.apostassa.aplicacao.categoria.subcategoria;
 
+import com.apostassa.aplicacao.ProvedorConexao;
 import com.apostassa.aplicacao.categoria.subcategoria.mapper.SubCategoriaMapper;
 import com.apostassa.dominio.ValidacaoException;
 import com.apostassa.dominio.categoria.subcategoria.AlterarSubCategoriaException;
@@ -16,16 +17,22 @@ import java.util.UUID;
 
 public class AlterarSubCategoria {
 
-	private RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria;
-	
-	private SubCategoriaMapper subCategoriaMapper;
-	
-	public AlterarSubCategoria(RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria) {
+	private final ProvedorConexao provedorConexao;
+
+	private final RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria;
+
+	private final SubCategoriaAdminPresenter presenter;
+
+	private final SubCategoriaMapper subCategoriaMapper;
+
+	public AlterarSubCategoria(ProvedorConexao provedorConexao, RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria, SubCategoriaAdminPresenter presenter) {
+		this.provedorConexao = provedorConexao;
 		this.repositorioDeSubCategoria = repositorioDeSubCategoria;
+		this.presenter = presenter;
 		this.subCategoriaMapper = Mappers.getMapper(SubCategoriaMapper.class);
 	}
 	
-	public void executa(AlterarSubCategoriaDTO alterarSubCategoriaDTO, String usuarioId) throws AlterarSubCategoriaException, ValidacaoException, AutenticacaoException {
+	public String executa(AlterarSubCategoriaDTO alterarSubCategoriaDTO, String usuarioId) throws AlterarSubCategoriaException, ValidacaoException, AutenticacaoException {
 		Set<ConstraintViolation<AlterarSubCategoriaDTO>> violations = Validation.buildDefaultValidatorFactory().getValidator().validate(alterarSubCategoriaDTO);
         for (ConstraintViolation<AlterarSubCategoriaDTO> violation : violations) {
         	throw new ValidacaoException(violation.getMessage());
@@ -40,16 +47,19 @@ public class AlterarSubCategoria {
 			
 			repositorioDeSubCategoria.alterarSubCategoria(subCategoria);
 			
-			repositorioDeSubCategoria.commitarTransacao();
-			
+			provedorConexao.commitarTransacao();
+
+			return presenter.respostaAlterarSubCategoria(subCategoria);
 		} catch (ValidacaoException e) {
 			e.printStackTrace();
-			repositorioDeSubCategoria.rollbackTransacao();
+			provedorConexao.rollbackTransacao();
 			throw new ValidacaoException(e.getMessage());
 		} catch (AlterarSubCategoriaException e) {
 			e.printStackTrace();
-			repositorioDeSubCategoria.rollbackTransacao();
+			provedorConexao.rollbackTransacao();
 			throw new AlterarSubCategoriaException(e.getMessage());
+		} finally {
+			provedorConexao.fecharConexao();
 		}
 	}
 	

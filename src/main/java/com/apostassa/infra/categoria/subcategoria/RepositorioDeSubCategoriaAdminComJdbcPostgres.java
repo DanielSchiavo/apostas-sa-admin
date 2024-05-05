@@ -17,7 +17,6 @@ import java.util.UUID;
 public class RepositorioDeSubCategoriaAdminComJdbcPostgres implements RepositorioDeSubCategoriaAdmin {
 
 	private final Connection connection;
-	private StringBuilder sql;
 
 	public RepositorioDeSubCategoriaAdminComJdbcPostgres(Connection connection) {
 		this.connection = connection;
@@ -27,7 +26,7 @@ public class RepositorioDeSubCategoriaAdminComJdbcPostgres implements Repositori
 	public void cadastrarSubCategoria(SubCategoria subCategoria) throws ValidacaoException {
 		String sql = """
 				INSERT INTO sub_categorias
-				(id, nome, icone, data_criacao, criado_por_usuario_id, ativo, categoria_id)
+				(id, nome, icone, data_e_hora_criacao, criado_por_usuario_id, ativo, categoria_id)
 				VALUES (?, ?, ?, ?, ?, ?, ?)""";
 		try (PreparedStatement ps = connection.prepareStatement(sql)) {
 			ps.setString(1, subCategoria.getId().toString());
@@ -111,19 +110,15 @@ public class RepositorioDeSubCategoriaAdminComJdbcPostgres implements Repositori
 	}
 
 	@Override
-	public void verificarSeNomeSubCategoriaJaExiste(String nomeSubCategoria) throws ValidacaoException {
+	public boolean verificarSeNomeSubCategoriaJaExiste(String nomeSubCategoria) throws ValidacaoException {
 		String sql = "SELECT EXISTS (SELECT nome FROM sub_categorias sc WHERE LOWER(sc.nome) = LOWER(?)) AS existe";
 		
 		try (PreparedStatement ps = connection.prepareStatement(sql)) {
 			ps.setString(1, nomeSubCategoria);
 			try (ResultSet rs = ps.executeQuery()) {
-	            if (rs.next()) {
-	                boolean existe = rs.getBoolean("existe");
-	                
-	                if (existe) {
-	                    throw new ValidacaoException("Já existe uma categoria cadastrada com esse nome");
-	                }
-	            }
+				rs.next();
+				boolean existe = rs.getBoolean("existe");
+				return existe;
 			}
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -143,9 +138,9 @@ public class RepositorioDeSubCategoriaAdminComJdbcPostgres implements Repositori
 				String id = rs.getString("id");
 				String nome = rs.getString("nome");
 				String icone = rs.getString("icone");
-				LocalDateTime dataCriacao = rs.getTimestamp("data_criacao").toLocalDateTime();
+				LocalDateTime dataCriacao = rs.getTimestamp("data_e_hora_criacao").toLocalDateTime();
 				String criadoPor = rs.getString("criado_por_usuario_id");
-				Timestamp dataUltimaAlteracaoTimestamp = rs.getTimestamp("data_ultima_alteracao");
+				Timestamp dataUltimaAlteracaoTimestamp = rs.getTimestamp("data_e_hora_ultima_alteracao");
 				String alteradoPor = rs.getString("alterado_por_usuario_id");
 				Long numeroApostas = rs.getLong("numero_apostas");
 				Long numeroEventos = rs.getLong("numero_eventos");
@@ -210,9 +205,9 @@ public class RepositorioDeSubCategoriaAdminComJdbcPostgres implements Repositori
 					String id = rs.getString("id");
 					String nome = rs.getString("nome");
 					String icone = rs.getString("icone");
-					LocalDateTime dataCriacao = rs.getTimestamp("data_criacao").toLocalDateTime();
+					LocalDateTime dataCriacao = rs.getTimestamp("data_e_hora_criacao").toLocalDateTime();
 					String criadoPor = rs.getString("criado_por_usuario_id");
-					Timestamp dataUltimaAlteracaoTimestamp = rs.getTimestamp("data_ultima_alteracao");
+					Timestamp dataUltimaAlteracaoTimestamp = rs.getTimestamp("data_e_hora_ultima_alteracao");
 					String alteradoPor = rs.getString("alterado_por_usuario_id");
 					Long numeroApostas = rs.getLong("numero_apostas");
 					Long numeroEventos = rs.getLong("numero_eventos");
@@ -279,9 +274,9 @@ public class RepositorioDeSubCategoriaAdminComJdbcPostgres implements Repositori
 					String id = rs.getString("id");
 					String nome = rs.getString("nome");
 					String icone = rs.getString("icone");
-					LocalDateTime dataCriacao = rs.getTimestamp("data_criacao").toLocalDateTime();
+					LocalDateTime dataCriacao = rs.getTimestamp("data_e_hora_criacao").toLocalDateTime();
 					String criadoPor = rs.getString("criado_por_usuario_id");
-					Timestamp dataUltimaAlteracaoTimestamp = rs.getTimestamp("data_ultima_alteracao");
+					Timestamp dataUltimaAlteracaoTimestamp = rs.getTimestamp("data_e_hora_ultima_alteracao");
 					String alteradoPor = rs.getString("alterado_por_usuario_id");
 					Long numeroApostas = rs.getLong("numero_apostas");
 					Long numeroEventos = rs.getLong("numero_eventos");
@@ -336,6 +331,21 @@ public class RepositorioDeSubCategoriaAdminComJdbcPostgres implements Repositori
 		}
 	}
 
+	@Override
+	public boolean verificarSeSubCategoriaIdExiste(String subCategoriaId) throws ValidacaoException {
+		String sql = "SELECT EXISTS (SELECT id FROM sub_categorias sc WHERE id = ?) AS existe";
+		try (PreparedStatement ps = connection.prepareStatement(sql)) {
+			ps.setString(1, subCategoriaId);
+			try (ResultSet rs = ps.executeQuery()) {
+				rs.next();
+				boolean existe = rs.getBoolean("existe");
+				return existe;
+			}
+		} catch (SQLException e) {
+			throw new ValidacaoException(e.getMessage());
+		}
+	}
+
 	private String gerarSqlAlterarSubCategoria(SubCategoria subCategoria) throws ValidacaoException {
 		StringBuilder sql = new StringBuilder("UPDATE sub_categorias SET ");
         boolean first = true;
@@ -368,32 +378,8 @@ public class RepositorioDeSubCategoriaAdminComJdbcPostgres implements Repositori
         if (first == true) {
         	throw new ValidacaoException("Para alterar uma sub-categoria você deve enviar alguma alteração seja em nome, icone ou ativo");
         }
-        sql.append(", data_ultima_alteracao = ?, alterado_por_usuario_id = ? WHERE id = ?");
+        sql.append(", data_e_hora_ultima_alteracao = ?, alterado_por_usuario_id = ? WHERE id = ?");
         
         return sql.toString();
-	}
-
-    public Connection getConnection() {
-    	return this.connection;
-    }
-    
-	@Override
-	public void commitarTransacao() {
-		try {
-			getConnection().commit();
-			getConnection().close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-	}
-
-	@Override
-	public void rollbackTransacao() {
-		try {
-			getConnection().rollback();
-			getConnection().close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
 	}
 }

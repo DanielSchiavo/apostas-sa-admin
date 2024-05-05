@@ -1,17 +1,13 @@
 package com.apostassa.aplicacao.categoria.subcategoria;
 
+import com.apostassa.aplicacao.ProvedorConexao;
 import com.apostassa.dominio.ValidacaoException;
 import com.apostassa.dominio.categoria.Categoria;
 import com.apostassa.dominio.categoria.RepositorioDeCategoriaAdmin;
 import com.apostassa.dominio.categoria.subcategoria.RepositorioDeSubCategoriaAdmin;
 import com.apostassa.dominio.categoria.subcategoria.SubCategoria;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,44 +15,49 @@ import java.util.Map;
 
 public class PegarTodasSubCategorias {
 
-	private RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria;
+	private final ProvedorConexao provedorConexao;
+
+	private final RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria;
+
+	private final SubCategoriaAdminPresenter presenter;
 	
-	private RepositorioDeCategoriaAdmin repositorioDeCategoria;
+	private final RepositorioDeCategoriaAdmin repositorioDeCategoria;
 	
-	public PegarTodasSubCategorias(RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria, RepositorioDeCategoriaAdmin repositorioDeCategoria) {
+	public PegarTodasSubCategorias(ProvedorConexao provedorConexao, RepositorioDeSubCategoriaAdmin repositorioDeSubCategoria, SubCategoriaAdminPresenter presenter, RepositorioDeCategoriaAdmin repositorioDeCategoria) {
+		this.provedorConexao = provedorConexao;
 		this.repositorioDeSubCategoria = repositorioDeSubCategoria;
+		this.presenter = presenter;
 		this.repositorioDeCategoria = repositorioDeCategoria;
 	}
 	
 	public String executa() throws ValidacaoException, JsonProcessingException{
-		List<SubCategoria> subCategorias = repositorioDeSubCategoria.pegarTodasSubCategorias();
-		
-		Map<String, Categoria> map = new HashMap<>();
-		subCategorias.forEach(subCategoria -> {
-			String categoriaId = subCategoria.getCategoria().getId().toString();
-			boolean containsKey = map.containsKey(categoriaId);
-			Categoria categoria = null;
-			if (containsKey) {
-				categoria = map.get(categoriaId);
-			}
-			else {
-				try {
-					categoria = repositorioDeCategoria.pegarCategoriaPorId(categoriaId);
-				} catch (ValidacaoException e) {
-					e.printStackTrace();
+		try {
+			List<SubCategoria> subCategorias = repositorioDeSubCategoria.pegarTodasSubCategorias();
+
+			Map<String, Categoria> map = new HashMap<>();
+			subCategorias.forEach(subCategoria -> {
+				String categoriaId = subCategoria.getCategoria().getId().toString();
+				boolean containsKey = map.containsKey(categoriaId);
+				Categoria categoria = null;
+				if (containsKey) {
+					categoria = map.get(categoriaId);
+				} else {
+					try {
+						categoria = repositorioDeCategoria.pegarCategoriaPorId(categoriaId);
+					} catch (ValidacaoException e) {
+						e.printStackTrace();
+					}
+					map.put(categoriaId, categoria);
 				}
-				map.put(categoriaId, categoria);
+				subCategoria.setCategoria(categoria);
+			});
+
+			provedorConexao.commitarTransacao();
+
+			return presenter.respostaPegarTodasSubCategorias(subCategorias);
+		} finally {
+				provedorConexao.fecharConexao();
 			}
-			subCategoria.setCategoria(categoria);
-		});
-		
-		repositorioDeSubCategoria.commitarTransacao();
-		
-		ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-		objectMapper.registerModule(new JavaTimeModule());
-		objectMapper.configOverride(LocalDateTime.class).setFormat(JsonFormat.Value.forPattern("dd/MM/yyyy hh:MM:ss"));
-		return objectMapper.writeValueAsString(subCategorias);
 	}
 	
 }
